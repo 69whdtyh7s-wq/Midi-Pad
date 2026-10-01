@@ -112,6 +112,7 @@
     if(w.midiChannel)A.H(w.midiChannel);if(w.columns)A.u(w.columns);if(w.appStyle&&A.kt&&A.kt.indexOf(w.appStyle)>=0)A.or(w.appStyle);
     A.v(false);return true}
   /* Restaurar: confirmación propia (no depende de confirm() del navegador) */
+  window.__mpAsk=function(t,sub,ok,fn){modal(t,sub,function(m){m.button(ok,true,function(){m.close();fn()});m.button("Cancelar",false,m.close)})};
   window.__mpRestoreText=function(txt){var r=parseBackup(txt);
     if(r.err){modal("No se pudo restaurar",r.err,function(m){m.button("Cerrar",true,m.close)});return}
     var w=r.data,np=w.pages.length,nd=w.pages.reduce(function(x,p){return x+p.pads.length},0);
@@ -209,6 +210,7 @@
   var menu=null,hold=null,start=null,swallowUntil=0;
   function api(){return window.__mpApi&&window.__mpApi()}
   var marked=null;
+  function ask(t,sub,ok,fn){if(window.__mpAsk)window.__mpAsk(t,sub,ok,fn);else if(confirm(t))fn()}
   function close(){if(menu){menu.remove();menu=null}if(marked){marked.removeAttribute("data-mp-menu");marked=null}}
   function clone(A,p){return Object.assign({},p,{id:A.hn(),actions:(p.actions&&p.actions.length?p.actions:[A.tr({})]).map(function(x){return Object.assign({},x,{id:A.hn()})})})}
   function emptyPad(A,id){var p=A.se({name:"",color:A.mn[Math.floor(Math.random()*A.mn.length)],number:0,midiType:"program"});if(id)p.id=id;return p}
@@ -231,6 +233,16 @@
     filaAbajo:function(A,ix,i){var r=Math.floor(i/A.l);edit(A,function(pads){while(pads.length%A.l)pads.push(emptyPad(A));var at=Math.min((r+1)*A.l,pads.length),add=[];for(var k=0;k<A.l;k++)add.push(emptyPad(A));pads.splice.apply(pads,[at,0].concat(add))})},
     colIzq:function(A,ix,i){if(A.l>=12)return;var c=i%A.l;A.e(function(pages){return window.__mpInsCol(pages,A.l,c,function(){return emptyPad(A)})});A.u(A.l+1)},
     colDer:function(A,ix,i){if(A.l>=12)return;var c=i%A.l;A.e(function(pages){return window.__mpInsCol(pages,A.l,c+1,function(){return emptyPad(A)})});A.u(A.l+1)},
+    filaBorrar:function(A,ix,i){var L=A.l,r=Math.floor(i/L),st=r*L,seg=A.Z.slice(st,st+L);
+      function go(){var A2=api();if(!A2)return;if(A2.ur&&seg.some(function(p){return p.id===A2.ur}))A2.Wn(null);
+        edit(A2,function(pads){pads.splice(st,L);if(!pads.length)for(var q=0;q<L;q++)pads.push(emptyPad(A2))})}
+      if(seg.some(named))ask("¿Borrar esta fila?","Tiene pads configurados. Se puede deshacer con ↶.","Borrar fila",go);else go()},
+    colBorrar:function(A,ix,i){var L=A.l,c=i%L;if(L<=1)return;
+      var lost=A.n.some(function(pg){return (pg.pads||[]).some(function(p,k){return k%L===c&&named(p)})});
+      function go(){var A2=api();if(!A2)return;A2.Wn(null);
+        A2.e(function(pages){return pages.map(function(pg){var P=pg.pads||[],R=[];for(var k=0;k<P.length;k+=L){var row=P.slice(k,k+L);if(c<row.length)row.splice(c,1);R.push.apply(R,row)}
+          if(!R.length)for(var q=0;q<L-1;q++)R.push(emptyPad(A2));return Object.assign({},pg,{pads:R})})});A2.u(L-1)}
+      if(lost)ask("¿Borrar esta columna?","Se borra en todas las páginas y hay pads configurados en ella. Se puede deshacer con ↶.","Borrar columna",go);else go()},
     seleccionar:function(A,ix,i){A.Wn(null);A.lr(true);A.bn(new Set([A.Z[i].id]))},
     todo:function(A){A.lr(true);A.bn(new Set(A.Z.map(function(p){return p.id})))},
     terminar:function(A){A.bn(new Set());A.lr(false)}
@@ -243,23 +255,25 @@
     var multi=ix.length>1,cnt=multi?" ("+ix.length+")":"";
     close();var th=A.f||{},bg=th.modalBg||"#fff",tx=th.text||"#1f1e1c",bd=th.cardBorder||"rgba(0,0,0,.1)";
     menu=document.createElement("div");
-    menu.setAttribute("style","position:fixed;z-index:10000;min-width:260px;max-height:calc(100vh - 16px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px;border-radius:14px;border:1px solid "+bd+";background:"+bg+";color:"+tx+";box-shadow:0 12px 40px rgba(0,0,0,.22);font:500 15px -apple-system,system-ui,sans-serif;-webkit-user-select:none;user-select:none");
-    var hasClip=!!(A.we&&A.we.length);
-    var items=[["copiar","Copiar"+cnt],["pegar","Pegar"+(A.we&&A.we.length>1?" ("+A.we.length+")":""),!hasClip],["duplicar","Duplicar"+cnt],null,["vaciar","Vaciar"+cnt],["borrar","Borrar"+cnt,false,"#e5484d"],null];
-    if(A.yn){items.push(["todo","Seleccionar todo"])}else items.push(["seleccionar","Seleccionar"]);items.push(null);var maxC=A.l>=12;items.push(["filaArriba","↑  Insertar fila arriba"],["filaAbajo","↓  Insertar fila abajo"],["colIzq","←  Insertar columna a la izquierda",maxC],["colDer","→  Insertar columna a la derecha",maxC]);
+    menu.setAttribute("style","position:fixed;z-index:10000;width:300px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px;border-radius:14px;border:1px solid "+bd+";background:"+bg+";color:"+tx+";box-shadow:0 12px 40px rgba(0,0,0,.22);font:500 15px -apple-system,system-ui,sans-serif;-webkit-user-select:none;user-select:none");
+    var hasClip=!!(A.we&&A.we.length),maxC=A.l>=12;
+    function hr(){var d=document.createElement("div");d.setAttribute("style","height:1px;margin:5px 6px;background:"+bd);menu.appendChild(d)}
+    function btn(key,label,opt){opt=opt||{};var b=document.createElement("button");b.type="button";b.textContent=label;if(opt.title)b.title=opt.title;
+      b.setAttribute("style","flex:1 1 0;min-width:0;padding:10px 6px;border-radius:9px;white-space:nowrap;text-align:center;background:transparent;color:"+(opt.color||tx)+";opacity:"+(opt.dis?0.35:1)+";font:inherit;font-size:"+(opt.small?"14px":"15px")+";cursor:pointer");
+      b.disabled=!!opt.dis;b.addEventListener("pointerenter",function(){if(!opt.dis)b.style.background="rgba(127,127,127,.14)"});
+      b.addEventListener("pointerleave",function(){b.style.background="transparent"});
+      b.addEventListener("click",function(ev){ev.stopPropagation();close();var A2=api();if(A2)actions[key](A2,ix,i)});return b}
+    function row(btns,label){var d=document.createElement("div");d.setAttribute("style","display:flex;align-items:center;gap:2px");
+      if(label){var l=document.createElement("span");l.textContent=label;l.setAttribute("style","width:76px;flex:0 0 76px;padding-left:10px;font-size:13px;font-weight:600;opacity:.6");d.appendChild(l)}
+      btns.forEach(function(b){d.appendChild(b)});menu.appendChild(d)}
     var title=document.createElement("div");
     title.textContent=A.yn?(ix.length+(ix.length===1?" pad seleccionado":" pads seleccionados")):(named(A.Z[i])?A.Z[i].name.replace(/\n/g," "):"Pad vacío");
-    title.setAttribute("style","padding:6px 12px 8px;font-size:12px;font-weight:600;opacity:.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px");menu.appendChild(title);
-    items.forEach(function(it){
-      if(!it){var hr=document.createElement("div");hr.setAttribute("style","height:1px;margin:5px 8px;background:"+bd);menu.appendChild(hr);return}
-      var dis=!!it[2];
-      var b=document.createElement("button");b.type="button";b.textContent=it[1];
-      b.setAttribute("style","display:block;width:100%;text-align:left;padding:10px 12px;border-radius:9px;white-space:nowrap;background:transparent;color:"+(it[3]||tx)+";opacity:"+(dis?0.35:1)+";font:inherit;cursor:pointer");
-      b.disabled=dis;
-      b.addEventListener("pointerenter",function(){if(!dis)b.style.background="rgba(127,127,127,.14)"});
-      b.addEventListener("pointerleave",function(){b.style.background="transparent"});
-      b.addEventListener("click",function(ev){ev.stopPropagation();close();var A2=api();if(A2)actions[it[0]](A2,ix,i)});
-      menu.appendChild(b)});
+    title.setAttribute("style","padding:6px 10px 6px;font-size:12px;font-weight:600;opacity:.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px");menu.appendChild(title);
+    row([btn("copiar","Copiar"+cnt),btn("pegar","Pegar"+(A.we&&A.we.length>1?" ("+A.we.length+")":""),{dis:!hasClip}),btn("duplicar","Duplicar"+cnt)]);
+    row([btn("vaciar","Vaciar"+cnt),btn("borrar","Borrar"+cnt,{color:"#e5484d"}),A.yn?btn("todo","Todo",{title:"Seleccionar todo"}):btn("seleccionar","Seleccionar")]);
+    hr();
+    row([btn("filaArriba","+ Arriba",{small:1,title:"Insertar fila arriba"}),btn("filaAbajo","+ Abajo",{small:1,title:"Insertar fila abajo"}),btn("filaBorrar","Borrar",{small:1,color:"#e5484d",title:"Borrar esta fila"})],"Fila");
+    row([btn("colIzq","+ Izq.",{small:1,dis:maxC,title:"Insertar columna a la izquierda"}),btn("colDer","+ Dcha.",{small:1,dis:maxC,title:"Insertar columna a la derecha"}),btn("colBorrar","Borrar",{small:1,color:"#e5484d",dis:A.l<=1,title:"Borrar esta columna"})],"Columna");
     document.body.appendChild(menu);marked=padEl;padEl.setAttribute("data-mp-menu","1");
     var r=menu.getBoundingClientRect(),W=window.innerWidth,H=window.innerHeight;
     menu.style.left=Math.max(8,Math.min(x,W-r.width-8))+"px";menu.style.top=Math.max(8,Math.min(y,H-r.height-8))+"px";
