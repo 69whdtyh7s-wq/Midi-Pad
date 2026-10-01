@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Prueba de ratón</title>
+<style>
+  body{margin:0;font:15px -apple-system,system-ui,sans-serif;background:#f6f4f0;color:#1f1e1c;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  h1{font-size:18px;margin:16px}
+  p{margin:0 16px 12px;color:#6b6762}
+  #zona{margin:16px;height:180px;border-radius:16px;background:#bfd6f2;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;touch-action:none}
+  #log{margin:0 16px 16px;padding:12px;border-radius:12px;background:#fff;border:1px solid #e3ded7;font:13px ui-monospace,Menlo,monospace;min-height:200px;white-space:pre-wrap}
+  button{margin:0 16px 8px;padding:10px 16px;border-radius:10px;border:1px solid #d8d3cc;background:#fff;font:inherit}
+</style>
+</head>
+<body>
+<h1>Prueba del clic derecho</h1>
+<p>Haz <b>un clic derecho</b> con el ratón sobre el recuadro azul. Después haz <b>un clic normal</b>. Copia o haz captura de lo que aparece abajo.</p>
+<div id="zona">Haz clic aquí</div>
+<button id="borrar">Borrar registro</button>
+<div id="log"></div>
+<script>
+  var log=document.getElementById("log"),zona=document.getElementById("zona"),t0=0;
+  function add(ev){
+    var now=performance.now();if(!t0||now-t0>1500){log.textContent+="\n— nuevo clic —\n"}t0=now;
+    var info=ev.type;
+    if("pointerType" in ev)info+=" tipo="+ev.pointerType;
+    if("button" in ev)info+=" button="+ev.button;
+    if("buttons" in ev)info+=" buttons="+ev.buttons;
+    if(ev.touches)info+=" dedos="+ev.touches.length;
+    if(ev.ctrlKey)info+=" ctrl";
+    if("webkitForce" in ev)info+=" force="+ev.webkitForce;
+    log.textContent+=info+"\n";
+  }
+  ["pointerdown","pointerup","mousedown","mouseup","click","auxclick","contextmenu","touchstart","touchend","gesturestart"].forEach(function(t){
+    zona.addEventListener(t,function(ev){add(ev);if(t==="contextmenu")ev.preventDefault()},{passive:false});
+  });
+  document.getElementById("borrar").onclick=function(){log.textContent="";t0=0};
+  log.textContent="Navegador: "+navigator.userAgent+"\n";
+</script>
+</body>
+</html>
