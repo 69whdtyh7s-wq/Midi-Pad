@@ -220,6 +220,8 @@
   function close(){if(menu){menu.remove();menu=null}if(marked){marked.removeAttribute("data-mp-menu");marked=null}}
   function clone(A,p){return Object.assign({},p,{id:A.hn(),actions:(p.actions&&p.actions.length?p.actions:[A.tr({})]).map(function(x){return Object.assign({},x,{id:A.hn()})})})}
   function emptyPad(A,id){var p=A.se({name:"",color:A.mn[Math.floor(Math.random()*A.mn.length)],number:0,midiType:"program"});if(id)p.id=id;return p}
+  function fillPad(A){var p=emptyPad(A);p.mpFill=true;return p}
+  function trimFill(pads){while(pads.length&&pads[pads.length-1].mpFill&&!named(pads[pads.length-1])&&!pads[pads.length-1].colorSet)pads.pop()}
   function edit(A,fn){A.e(function(pages){var P=pages.slice(),pads=P[A.t].pads.slice();fn(pads);P[A.t]=Object.assign({},P[A.t],{pads:pads});return P})}
   function named(p){return !!(p&&p.name&&p.name.trim())}
   var actions={
@@ -236,18 +238,19 @@
     borrar:function(A,ix){var ids={};ix.forEach(function(k){ids[A.Z[k].id]=1});if(A.ur&&ids[A.ur])A.Wn(null);
       if(A.yn)A.bn(new Set());edit(A,function(pads){for(var k=pads.length-1;k>=0;k--)if(ids[pads[k].id])pads.splice(k,1);if(!pads.length)for(var q=0;q<A.l;q++)pads.push(emptyPad(A))})},
     filaArriba:function(A,ix,i){var r=Math.floor(i/A.l);edit(A,function(pads){var add=[];for(var k=0;k<A.l;k++)add.push(emptyPad(A));pads.splice.apply(pads,[r*A.l,0].concat(add))})},
-    filaAbajo:function(A,ix,i){var r=Math.floor(i/A.l);edit(A,function(pads){while(pads.length%A.l)pads.push(emptyPad(A));var at=Math.min((r+1)*A.l,pads.length),add=[];for(var k=0;k<A.l;k++)add.push(emptyPad(A));pads.splice.apply(pads,[at,0].concat(add))})},
+    filaAbajo:function(A,ix,i){var L=A.l,r=Math.floor(i/L);edit(A,function(pads){var last=Math.floor((pads.length-1)/L);
+      if(r>=last)while(pads.length%L)pads.push(fillPad(A));var at=Math.min((r+1)*L,pads.length),add=[];for(var k=0;k<L;k++)add.push(emptyPad(A));pads.splice.apply(pads,[at,0].concat(add))})},
     colIzq:function(A,ix,i){if(A.l>=12)return;var c=i%A.l;A.e(function(pages){return window.__mpInsCol(pages,A.l,c,function(){return emptyPad(A)})});A.u(A.l+1)},
     colDer:function(A,ix,i){if(A.l>=12)return;var c=i%A.l;A.e(function(pages){return window.__mpInsCol(pages,A.l,c+1,function(){return emptyPad(A)})});A.u(A.l+1)},
     filaBorrar:function(A,ix,i){var L=A.l,r=Math.floor(i/L),st=r*L,seg=A.Z.slice(st,st+L);
       function go(){var A2=api();if(!A2)return;if(A2.ur&&seg.some(function(p){return p.id===A2.ur}))A2.Wn(null);
-        edit(A2,function(pads){pads.splice(st,L);if(!pads.length)for(var q=0;q<L;q++)pads.push(emptyPad(A2))})}
+        edit(A2,function(pads){pads.splice(st,L);trimFill(pads);if(!pads.length)for(var q=0;q<L;q++)pads.push(emptyPad(A2))})}
       if(seg.some(named))ask("¿Borrar esta fila?","Tiene pads configurados. Se puede deshacer con ↶.","Borrar fila",go);else go()},
     colBorrar:function(A,ix,i){var L=A.l,c=i%L;if(L<=1)return;
       var lost=A.n.some(function(pg){return (pg.pads||[]).some(function(p,k){return k%L===c&&named(p)})});
       function go(){var A2=api();if(!A2)return;A2.Wn(null);
         A2.e(function(pages){return pages.map(function(pg){var P=pg.pads||[],R=[];for(var k=0;k<P.length;k+=L){var row=P.slice(k,k+L);if(c<row.length)row.splice(c,1);R.push.apply(R,row)}
-          if(!R.length)for(var q=0;q<L-1;q++)R.push(emptyPad(A2));return Object.assign({},pg,{pads:R})})});A2.u(L-1)}
+          trimFill(R);if(!R.length)for(var q=0;q<L-1;q++)R.push(emptyPad(A2));return Object.assign({},pg,{pads:R})})});A2.u(L-1)}
       if(lost)ask("¿Borrar esta columna?","Se borra en todas las páginas y hay pads configurados en ella. Se puede deshacer con ↶.","Borrar columna",go);else go()},
     seleccionar:function(A,ix,i){A.Wn(null);A.lr(true);A.bn(new Set([A.Z[i].id]))},
     todo:function(A){A.lr(true);A.bn(new Set(A.Z.map(function(p){return p.id})))},
