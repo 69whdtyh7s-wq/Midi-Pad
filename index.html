@@ -84,6 +84,8 @@
     function download(){var blob=new Blob([txt],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
       a.href=url;a.download=name;a.style.display="none";document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(url);a.remove()},4000)}
     modal("Copia de seguridad",name+" · "+np+" página"+(np===1?"":"s")+" y "+nd+" pads",function(m){
+      if(/WebMIDIBrowser/i.test(navigator.userAgent)){var tip=document.createElement("div");tip.textContent="En Web MIDI Browser, gira el iPad a horizontal antes de pulsar «Guardar archivo»: su menú de guardar solo se ve completo en esa posición. También puedes usar «Copiar copia como texto».";
+        tip.setAttribute("style","font-size:13px;line-height:1.45;padding:10px 12px;border-radius:12px;margin-bottom:2px;background:rgba(122,155,181,.16);color:"+m.colors.tx);m.el(tip)}
       m.button("Guardar archivo",true,function(){
         var file=null;try{file=new File([txt],name,{type:"application/json"})}catch(e){}
         if(!native&&file&&navigator.canShare&&navigator.canShare({files:[file]})){
