@@ -174,10 +174,12 @@
     copiar:function(A,ix){A.mf(ix.map(function(k){return A.Z[k]}))},
     pegar:function(A,ix,i){var src=A.we;if(!src||!src.length)return;edit(A,function(pads){
       src.forEach(function(p,k){var j=i+k;var c=clone(A,p);if(j<pads.length){c.id=pads[j].id;pads[j]=c}else pads.push(c)});while(pads.length%A.l)pads.push(emptyPad(A))})},
-    duplicar:function(A,ix){edit(A,function(pads){var used={},cur=-1;ix.forEach(function(k){used[k]=1});
-      ix.forEach(function(k){var c=clone(A,pads[k]),j=-1;for(var m=Math.max(k,cur)+1;m<pads.length;m++){if(!used[m]&&!named(pads[m])){j=m;break}}
-        if(j>=0){c.id=pads[j].id;pads[j]=c;used[j]=1;cur=j}else{pads.push(c);cur=pads.length-1;used[cur]=1}});
-      while(pads.length%A.l)pads.push(emptyPad(A))})},
+    duplicar:function(A,ix){edit(A,function(pads){
+      /* La copia va al final: después del último pad con nombre, ocupando huecos vacíos del final si los hay */
+      var copies=ix.map(function(k){return clone(A,pads[k])});
+      var last=-1;for(var m=pads.length-1;m>=0;m--){if(named(pads[m])){last=m;break}}
+      var pos=last+1;
+      copies.forEach(function(c){if(pos<pads.length&&!named(pads[pos])){c.id=pads[pos].id;pads[pos]=c}else pads.push(c);pos++})})},
     vaciar:function(A,ix){edit(A,function(pads){ix.forEach(function(k){pads[k]=emptyPad(A,pads[k].id)})})},
     borrar:function(A,ix){var ids={};ix.forEach(function(k){ids[A.Z[k].id]=1});if(A.ur&&ids[A.ur])A.Wn(null);
       if(A.yn)A.bn(new Set());edit(A,function(pads){for(var k=pads.length-1;k>=0;k--)if(ids[pads[k].id])pads.splice(k,1);if(!pads.length)for(var q=0;q<A.l;q++)pads.push(emptyPad(A))})},
