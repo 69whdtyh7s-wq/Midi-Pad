@@ -37,11 +37,11 @@
     return ble.dev.gatt.connect().then(function(g){return g.getPrimaryService(SVC)}).then(function(sv){return sv.getCharacteristic(CHR)})
       .then(function(c){ble.ch=c;paint(ble.dev.name||"MIDI Bluetooth",true)})}
   function bleConnect(){
-    if(ble.dev&&!ble.ch)return bleLink().catch(function(){paint("Toca para reconectar",false)});
-    navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]}).then(function(d){
+    if(ble.dev&&!ble.ch)return bleLink().catch(function(e){paint("Error: "+((e&&e.message)||"sin conexión").slice(0,70)+" · toca para reintentar",false)});
+    navigator.bluetooth.requestDevice({filters:[{services:[SVC]},{namePrefix:"WIDI"},{namePrefix:"CME"}],optionalServices:[SVC]}).then(function(d){
       ble.dev=d;d.addEventListener("gattserverdisconnected",function(){ble.ch=null;paint("Reconectando…",false);
         setTimeout(function(){bleLink().catch(function(){paint("Toca para reconectar",false)})},800)});
-      return bleLink()}).catch(function(e){paint(ble.ch?(ble.dev.name||"MIDI Bluetooth"):"Conectar MIDI Bluetooth",!!ble.ch)})}
+      return bleLink()}).catch(function(e){if(ble.ch){paint(ble.dev.name||"MIDI Bluetooth",true);return}var m=(e&&(e.message||e.name))||"error";paint(/cancel/i.test(m)?"Conectar MIDI Bluetooth":"Error: "+m.slice(0,70)+" · toca para reintentar",false)})}
   if(navigator.bluetooth&&!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.midi)){
     document.addEventListener("DOMContentLoaded",function(){
       btn=document.createElement("button");btn.type="button";
