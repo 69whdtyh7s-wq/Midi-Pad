@@ -222,6 +222,14 @@
   document.addEventListener("touchstart",function(ev){var p=padAt(ev.target),A=api();if(menu&&!menu.contains(ev.target))close();
     if(!p||!A||!A.o||ev.touches.length!==1||lastPtr==="mouse"||lastPtr==="pen")return;var t=ev.touches[0];start={x:t.clientX,y:t.clientY};clearTimeout(hold);
     hold=setTimeout(function(){hold=null;if(navigator.vibrate)try{navigator.vibrate(10)}catch(e){};open(p,start.x,start.y);swallowUntil=Date.now()+100000},550)},{passive:true,capture:true});
+  /* Web MIDI Browser (iPad): el ratón llega como toque. El clic izquierdo trae mousedown/click;
+     el derecho no trae nada. Toque corto sin clic posterior = clic derecho → abre el menú. */
+  var tStart=0,tPad=null,tMoved=false,gotMouse=false,rcTimer=null;
+  document.addEventListener("touchstart",function(ev){var p=padAt(ev.target),A=api();tPad=(p&&A&&A.o&&ev.touches.length===1)?p:null;tStart=Date.now();tMoved=false;gotMouse=false;clearTimeout(rcTimer)},{passive:true,capture:true});
+  document.addEventListener("touchmove",function(ev){if(!start)return;var t=ev.touches[0];if(Math.abs(t.clientX-start.x)>10||Math.abs(t.clientY-start.y)>10)tMoved=true},{passive:true,capture:true});
+  document.addEventListener("touchend",function(){if(!tPad||tMoved||menu||Date.now()-tStart>450)return;var p=tPad,x=start?start.x:0,y=start?start.y:0;
+    rcTimer=setTimeout(function(){if(gotMouse||menu)return;var A=api();if(!A||!A.o||!document.body.contains(p))return;openNow(p,x,y)},450)},{capture:true});
+  ["mousedown","click"].forEach(function(tp){document.addEventListener(tp,function(){gotMouse=true;clearTimeout(rcTimer)},true)});
   document.addEventListener("touchmove",function(ev){if(!hold||!start)return;var t=ev.touches[0];if(Math.abs(t.clientX-start.x)>10||Math.abs(t.clientY-start.y)>10){clearTimeout(hold);hold=null}},{passive:true,capture:true});
   document.addEventListener("touchend",function(ev){if(hold){clearTimeout(hold);hold=null}if(swallowUntil>Date.now()+50000)swallowUntil=Date.now()+600},{capture:true});
   document.addEventListener("click",function(ev){if(Date.now()<swallowUntil&&!(menu&&menu.contains(ev.target))){ev.stopPropagation();ev.preventDefault();return}
