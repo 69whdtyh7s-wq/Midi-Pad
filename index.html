@@ -194,7 +194,7 @@
     var rows=grid.querySelectorAll(".mp-row").length||1,A=window.__mpApi&&window.__mpApi();
     var reserve=(A&&A.yn)?96:16;root.style.setProperty("--mp-pb",reserve+"px");
     var top=grid.getBoundingClientRect().top+(window.scrollY||0),avail=window.innerHeight-top-reserve;
-    var normal=window.innerWidth>=640?84:78,gap=10,h=Math.floor((avail-gap*(rows-1))/rows);
+    var normal=window.innerWidth>=640?150:110,gap=10,h=Math.floor((avail-gap*(rows-1))/rows);
     if(h<52){gap=6;h=Math.floor((avail-gap*(rows-1))/rows)}
     h=Math.max(20,Math.min(normal,h));setH(h,gap);fitNames();
     var prev=1e9;for(var k=0;k<40;k++){var over=root.scrollHeight-window.innerHeight;if(over<=0||h<=20||over>=prev)break;prev=over;h=Math.max(20,h-Math.max(1,Math.ceil(over/rows)));setH(h,gap);fitNames()}}
