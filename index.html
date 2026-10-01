@@ -22,9 +22,32 @@
   function post(m){
     if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.midi){window.webkit.messageHandlers.midi.postMessage(m);return}
     console.log("[MIDI]",JSON.stringify(m));
+    if(ble.ch){bleSend(bytes(m));return}
     access().then(function(a){var b=bytes(m);a.outputs.forEach(function(o){if(!/network session/i.test(o.name||""))o.send(b)})}).catch(function(){});
   }
   if(!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.midi))setTimeout(function(){access().catch(function(){})},500);
+
+  /* Bluetooth MIDI directo con Web Bluetooth (navegador gratuito "Bluefy" en iPad, o Chrome) */
+  var SVC="03b80e5a-ede8-4b33-a751-6ce34ec4c700",CHR="7772e5db-3868-4112-a1a9-f2669d106bf3";
+  var ble={dev:null,ch:null,q:Promise.resolve()},btn=null;
+  function bleSend(b){var t=Date.now()&0x1FFF,pk=new Uint8Array([0x80|((t>>7)&0x3F),0x80|(t&0x7F)].concat(b));
+    ble.q=ble.q.then(function(){return ble.ch&&(ble.ch.writeValueWithoutResponse?ble.ch.writeValueWithoutResponse(pk):ble.ch.writeValue(pk))}).catch(function(){})}
+  function paint(txt,ok){if(!btn)return;btn.lastChild.textContent=txt;btn.firstChild.style.background=ok?"#34c759":"#ff3b30"}
+  function bleLink(){paint("Conectando…",false);
+    return ble.dev.gatt.connect().then(function(g){return g.getPrimaryService(SVC)}).then(function(sv){return sv.getCharacteristic(CHR)})
+      .then(function(c){ble.ch=c;paint(ble.dev.name||"MIDI Bluetooth",true)})}
+  function bleConnect(){
+    if(ble.dev&&!ble.ch)return bleLink().catch(function(){paint("Toca para reconectar",false)});
+    navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]}).then(function(d){
+      ble.dev=d;d.addEventListener("gattserverdisconnected",function(){ble.ch=null;paint("Reconectando…",false);
+        setTimeout(function(){bleLink().catch(function(){paint("Toca para reconectar",false)})},800)});
+      return bleLink()}).catch(function(e){paint(ble.ch?(ble.dev.name||"MIDI Bluetooth"):"Conectar MIDI Bluetooth",!!ble.ch)})}
+  if(navigator.bluetooth&&!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.midi)){
+    document.addEventListener("DOMContentLoaded",function(){
+      btn=document.createElement("button");btn.type="button";
+      btn.setAttribute("style","position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:9999;display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font:600 12px -apple-system,system-ui,sans-serif;color:#1f1e1c;box-shadow:0 2px 10px rgba(0,0,0,.08)");
+      btn.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:#ff3b30;display:inline-block"></span><span>Conectar MIDI Bluetooth</span>';
+      btn.addEventListener("click",bleConnect);document.body.appendChild(btn)})}
   function acts(p){return p.actions&&p.actions.length?p.actions:[{midiType:p.midiType,channel:p.channel,number:p.number,value:p.value,downValue:p.downValue}]}
   function n(v,d){v=Number(v);return isNaN(v)?d:Math.max(0,Math.min(127,Math.round(v)))}
   window.__mpPress=function(p){
