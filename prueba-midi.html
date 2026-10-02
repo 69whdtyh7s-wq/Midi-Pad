@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Prueba de MIDI</title>
+<style>
+  body{margin:0;font:15px -apple-system,system-ui,sans-serif;background:#f6f4f0;color:#1f1e1c}
+  h1{font-size:18px;margin:16px}
+  p{margin:0 16px 12px;color:#6b6762;line-height:1.4}
+  .box{margin:0 16px 12px;padding:12px;border-radius:12px;background:#fff;border:1px solid #e3ded7;font:13px ui-monospace,Menlo,monospace;white-space:pre-wrap}
+  #log{min-height:220px}
+  button{margin:0 0 12px 16px;padding:12px 16px;border-radius:10px;border:1px solid #d8d3cc;background:#fff;font:600 14px -apple-system,system-ui,sans-serif}
+  button.dark{background:#2a2a28;color:#fff;border-color:#2a2a28}
+</style>
+</head>
+<body>
+<h1>Prueba de MIDI de entrada</h1>
+<p>1. Espera unos segundos a que aparezcan las entradas.<br>2. Pulsa <b>Enviar PC 0</b> (con MIDI Through activado, el Anagram debería devolverlo).<br>3. Cambia de preset en el Anagram.<br>4. Haz una captura de esta pantalla.</p>
+<div class="box" id="estado">Comprobando…</div>
+<button class="dark" id="pc">Enviar PC 0</button><button id="pc1">Enviar PC 1</button><button id="borrar">Borrar registro</button>
+<div class="box" id="log">Mensajes recibidos:
+</div>
+<script>
+  var est=document.getElementById("estado"),log=document.getElementById("log"),acc=null,t0=Date.now(),tries=0,hooked={};
+  function hex(d){var o=[];for(var i=0;i<d.length;i++)o.push(("0"+d[i].toString(16)).slice(-2).toUpperCase());return o.join(" ")}
+  function name(d){var k=d[0]&0xF0,c=(d[0]&15)+1;if(k===0xC0)return"PC "+d[1]+" canal "+c;if(k===0xB0)return"CC "+d[1]+"="+d[2]+" canal "+c;if(k===0x90)return"Nota on "+d[1];if(k===0x80)return"Nota off "+d[1];if(d[0]===0xF8)return"Reloj";if(d[0]===0xFE)return"Active sensing";return""}
+  function add(src,d){if(d[0]===0xF8||d[0]===0xFE){clk++;return}var s=((Date.now()-t0)/1000).toFixed(1)+"s  "+hex(d)+"  "+name(d)+"  ← "+src;log.textContent=log.textContent.replace(/^(Mensajes recibidos:\n)/,"$1"+s+"\n")}
+  var clk=0;
+  function render(){var L=[];L.push("Navegador: "+navigator.userAgent.slice(0,120));
+    L.push("requestMIDIAccess: "+(navigator.requestMIDIAccess?"sí":"no")+"  (intentos: "+tries+")");
+    var mh=window.webkit&&window.webkit.messageHandlers;try{L.push("webkit.messageHandlers: "+(mh?Object.keys(mh).join(", ")||"(sin nombres listables)":"no"))}catch(e){L.push("webkit.messageHandlers: sí")}
+    if(acc){var ins=[],outs=[];acc.inputs.forEach(function(i){ins.push(i.name+" ["+(i.state||"?")+"/"+(i.connection||"?")+"]")});acc.outputs.forEach(function(o){outs.push(o.name+" ["+(o.state||"?")+"]")});
+      L.push("Entradas ("+ins.length+"): "+(ins.join(", ")||"ninguna"));L.push("Salidas ("+outs.length+"): "+(outs.join(", ")||"ninguna"))}else L.push("Acceso MIDI: todavía no");
+    if(clk)L.push("Reloj/active sensing recibidos: "+clk);
+    est.textContent=L.join("\n")}
+  function hook(){if(!acc)return;acc.inputs.forEach(function(inp,key){if(hooked[key])return;hooked[key]=1;
+      var h=function(ev){if(ev.__mp)return;try{ev.__mp=1}catch(e){}add(inp.name,ev.data)};
+      inp.onmidimessage=h;try{inp.addEventListener&&inp.addEventListener("midimessage",h)}catch(e){}try{inp.open&&inp.open()}catch(e){}})}
+  function start(){if(acc)return;tries++;if(!navigator.requestMIDIAccess){setTimeout(start,1000);return}
+    navigator.requestMIDIAccess().then(function(a){acc=a;hook();try{a.onstatechange=function(){hook();render()}}catch(e){}},function(e){est.textContent="Error de acceso MIDI: "+(e&&(e.message||e.name));setTimeout(start,1500)})}
+  function send(n){if(!acc){alert("Todavía no hay acceso MIDI");return}var c=0;acc.outputs.forEach(function(o){o.send([0xC0,n]);c++});var t=((Date.now()-t0)/1000).toFixed(1)+"s  → ENVIADO PC "+n+" a "+c+" salida"+(c===1?"":"s");log.textContent=log.textContent.replace(/^(Mensajes recibidos:\n)/,"$1"+t+"\n")}
+  document.getElementById("pc").onclick=function(){send(0)};document.getElementById("pc1").onclick=function(){send(1)};
+  document.getElementById("borrar").onclick=function(){log.textContent="Mensajes recibidos:\n";clk=0};
+  setInterval(function(){hook();render()},1000);setTimeout(start,300);render();
+</script>
+</body>
+</html>
