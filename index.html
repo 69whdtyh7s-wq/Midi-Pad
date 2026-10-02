@@ -209,10 +209,19 @@
   var root=document.documentElement;
   function setH(v,gap){root.style.setProperty("--mp-padh",v+"px");root.style.setProperty("--mp-gap",gap+"px");root.style.setProperty("--mp-padpy",(v<56?Math.max(2,Math.round(v/10)):12)+"px")}
   function fitNames(){document.querySelectorAll(".mp-name").forEach(fitOne)}
-  window.__mpNewRows=function(){var W=Math.min(window.innerWidth,1240)-(window.innerWidth>=640?48:32),gap=10,pw=(W-3*gap)/4;
+  /* Filas que caben en pantalla (modo tocar): con pads cuadrados o con la altura normal */
+  function screenRows(L,square){var W=Math.min(window.innerWidth,1240)-(window.innerWidth>=640?48:32),gap=10,pw=(W-(L-1)*gap)/L;
     var hd=document.querySelector("header"),top=(hd?hd.getBoundingClientRect().height:97)+24,avail=window.innerHeight-top-16;
-    return Math.max(1,Math.floor((avail+gap)/(pw+gap)))};
-  function fitAll(){raf=0;var as=document.querySelector("aside.sticky");if(as){as.style.top="";var at=as.getBoundingClientRect().top;as.style.height=Math.max(200,window.innerHeight-at)+"px"}
+    var h=square?pw:(window.innerWidth>=640?150:110);return Math.max(1,Math.floor((avail+gap)/(h+gap)))}
+  window.__mpNewRows=function(){return screenRows(4,true)};
+  /* Completa la página con huecos vacíos hasta llenar la pantalla, sin mover ningún pad */
+  function ensureFill(){var A=window.__mpApi&&window.__mpApi();if(!A||!A.n||!A.n[A.t]||(A.O!==null&&A.O!==undefined))return false;
+    var pg=A.n[A.t],L=A.l||4,need=screenRows(L,!!pg.square)*L,P=pg.pads||[];
+    var target=Math.max(need,Math.ceil(P.length/L)*L);if(P.length>=target)return false;
+    A.e(function(pages){var X=pages.slice(),q=X[A.t];if(!q)return pages;var pads=(q.pads||[]).slice();
+      while(pads.length<target){var f=A.se({name:"",color:A.mn[pads.length%A.mn.length],number:0,midiType:"program"});f.mpFill=true;pads.push(f)}
+      X[A.t]=Object.assign({},q,{pads:pads});return X});return true}
+  function fitAll(){raf=0;if(ensureFill())return;var as=document.querySelector("aside.sticky");if(as){as.style.top="";var at=as.getBoundingClientRect().top;as.style.height=Math.max(200,window.innerHeight-at)+"px"}
     var grid=document.querySelector(".mp-grid");if(!grid){fitNames();return}
     var rows=grid.querySelectorAll(".mp-row").length||1,A=window.__mpApi&&window.__mpApi();
     var reserve=(A&&A.yn)?96:16;root.style.setProperty("--mp-pb",reserve+"px");
