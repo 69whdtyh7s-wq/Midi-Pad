@@ -15,7 +15,7 @@
   var on=new Set();window.__mpOn=on;
   /* Sin app nativa: Web MIDI (p. ej. app gratuita "Web MIDI Browser" en iPad, o Chrome en ordenador) */
   var acc=null,asking=null;
-  function access(){if(acc)return Promise.resolve(acc);if(!asking&&navigator.requestMIDIAccess)asking=navigator.requestMIDIAccess().then(function(a){acc=a;return a});return asking||Promise.reject()}
+  function access(){if(acc)return Promise.resolve(acc);if(!asking&&navigator.requestMIDIAccess)asking=navigator.requestMIDIAccess().then(function(a){acc=a;return a},function(e){asking=null;throw e});return asking||Promise.reject()}
   function bytes(m){var c=m.channel-1;if(m.type==="pc")return[0xC0|c,m.number];
     if(m.type==="cc")return[0xB0|c,m.number,m.value===0?1:m.value];/* el Anagram ignora CC 0 */
     if(m.type==="noteOn")return[0x90|c,m.number,Math.max(1,m.value)];return[0x80|c,m.number,0]}
@@ -24,7 +24,7 @@
     if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.midi){window.webkit.messageHandlers.midi.postMessage(m);return}
     console.log("[MIDI]",JSON.stringify(m));
     if(ble.ch){bleSend(bytes(m));return}
-    access().then(function(a){var b=bytes(m);a.outputs.forEach(function(o){if(!/network session/i.test(o.name||""))o.send(b)})}).catch(function(){});
+    access().then(function(a){if(!rxOn)startRx();var b=bytes(m);a.outputs.forEach(function(o){if(!/network session/i.test(o.name||""))o.send(b)})}).catch(function(){});
   }
   /* Recepción MIDI: un Program Change que llega de un dispositivo MIDI abre la página asociada a ese preset */
   function toast(txt){var d=document.getElementById("mp-rx-toast");if(!d){d=document.createElement("div");d.id="mp-rx-toast";
@@ -61,12 +61,17 @@
   window.__mpBleRx=bleRx;
   window.__mpInputs=[];
   function hookInputs(a){var names=[];a.inputs.forEach(function(inp){names.push(inp.name||"Entrada MIDI");if(inp._mp)return;inp._mp=1;
-      inp.onmidimessage=function(ev){window.__mpRecv(ev.data,inp.name)};try{inp.open&&inp.open()}catch(e){}});window.__mpInputs=names}
-  if(!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.midi))setTimeout(function(){access().then(function(a){hookInputs(a);a.onstatechange=function(){hookInputs(a)};
-      setInterval(function(){hookInputs(a)},2000)}).catch(function(){window.__mpInputs=null})},500);
+      var h=function(ev){if(!ev||ev.__mp)return;try{ev.__mp=1}catch(e){}window.__mpRecv(ev.data,inp.name)};
+      inp.onmidimessage=h;try{inp.addEventListener&&inp.addEventListener("midimessage",h)}catch(e){}try{inp.open&&inp.open()}catch(e){}});window.__mpInputs=names}
+  /* Web MIDI Browser activa su MIDI un poco después de cargar: se reintenta hasta conseguirlo */
+  var rxTries=0,rxOn=false;window.__mpInputs=undefined;
+  function startRx(){if(rxOn)return;rxTries++;access().then(function(a){if(rxOn)return;rxOn=true;hookInputs(a);try{a.onstatechange=function(){hookInputs(a)}}catch(e){}
+      setInterval(function(){hookInputs(a)},2000)}).catch(function(){if(rxTries>=20)window.__mpInputs=null;setTimeout(startRx,1500)})}
+  window.__mpStartRx=startRx;
+  if(!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.midi))setTimeout(startRx,500);
   /* Monitor en Ajustes */
   setInterval(function(){var el=document.querySelector("[data-mp-rxmon]");if(!el)return;var ins=window.__mpInputs,nat=window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.midi;
-    var h1=nat?"App nativa (CoreMIDI): escucha todas las entradas":(ble.ch?"Bluetooth directo: "+(ble.dev&&ble.dev.name||"conectado"):(ins===null?"Este navegador no permite recibir MIDI":(ins.length?"Entradas: "+ins.join(", "):"No se detecta ninguna entrada MIDI")));
+    var h1=nat?"App nativa (CoreMIDI): escucha todas las entradas":(ble.ch?"Bluetooth directo: "+(ble.dev&&ble.dev.name||"conectado"):(ins===null?"Este navegador no permite recibir MIDI":ins===undefined?"Buscando entradas MIDI…":(ins.length?"Entradas: "+ins.join(", "):"No se detecta ninguna entrada MIDI")));
     var txt=h1+"\n"+(rxLog.length?rxLog.join("\n"):"Aún no ha llegado ningún mensaje");if(el.textContent!==txt)el.textContent=txt},300);
 
   /* Bluetooth MIDI directo con Web Bluetooth (navegador gratuito "Bluefy" en iPad, o Chrome) */
