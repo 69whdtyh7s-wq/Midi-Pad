@@ -30,11 +30,11 @@
   function render(){var L=[];L.push("Navegador: "+navigator.userAgent.slice(0,120));
     L.push("requestMIDIAccess: "+(navigator.requestMIDIAccess?"sí":"no")+"  (intentos: "+tries+")");
     var mh=window.webkit&&window.webkit.messageHandlers;try{L.push("webkit.messageHandlers: "+(mh?Object.keys(mh).join(", ")||"(sin nombres listables)":"no"))}catch(e){L.push("webkit.messageHandlers: sí")}
-    if(acc){var ins=[],outs=[];acc.inputs.forEach(function(i){ins.push(i.name+" ["+(i.state||"?")+"/"+(i.connection||"?")+"]")});acc.outputs.forEach(function(o){outs.push(o.name+" ["+(o.state||"?")+"]")});
+    if(acc){var ins=[],outs=[];acc.inputs.forEach(function(i){ins.push(i.name+" ["+(i.state||"?")+"/"+(i.connection||"?")+(i.__mpHooked?"/escuchando":"")+"]")});acc.outputs.forEach(function(o){outs.push(o.name+" ["+(o.state||"?")+"]")});
       L.push("Entradas ("+ins.length+"): "+(ins.join(", ")||"ninguna"));L.push("Salidas ("+outs.length+"): "+(outs.join(", ")||"ninguna"))}else L.push("Acceso MIDI: todavía no");
     if(clk)L.push("Reloj/active sensing recibidos: "+clk);
     est.textContent=L.join("\n")}
-  function hook(){if(!acc)return;acc.inputs.forEach(function(inp,key){if(hooked[key])return;hooked[key]=1;
+  function hook(){if(!acc)return;acc.inputs.forEach(function(inp){if(inp.__mpHooked)return;inp.__mpHooked=1;
       var h=function(ev){if(ev.__mp)return;try{ev.__mp=1}catch(e){}add(inp.name,ev.data)};
       inp.onmidimessage=h;try{inp.addEventListener&&inp.addEventListener("midimessage",h)}catch(e){}try{inp.open&&inp.open()}catch(e){}})}
   function start(){if(acc)return;tries++;if(!navigator.requestMIDIAccess){setTimeout(start,1000);return}
