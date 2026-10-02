@@ -348,8 +348,25 @@
     row([btn("copiar","Copiar"+cnt),btn("pegar","Pegar"+(A.we&&A.we.length>1?" ("+A.we.length+")":""),{dis:!hasClip}),btn("duplicar","Duplicar"+cnt)]);
     row([btn("vaciar","Vaciar"+cnt),btn("borrar","Borrar"+cnt,{color:"#e5484d"}),A.yn?btn("todo","Todo",{title:"Seleccionar todo"}):btn("seleccionar","Seleccionar")]);
     hr();
-    row([btn("filaArriba","",{iconOnly:1,title:"Insertar fila arriba"}),btn("filaAbajo","",{iconOnly:1,title:"Insertar fila abajo"}),btn("filaBorrar","",{iconOnly:1,color:"#e5484d",title:"Borrar esta fila"}),vsep(),
-         btn("colIzq","",{iconOnly:1,dis:maxC,title:"Insertar columna a la izquierda"}),btn("colDer","",{iconOnly:1,dis:maxC,title:"Insertar columna a la derecha"}),btn("colBorrar","",{iconOnly:1,color:"#e5484d",dis:A.l<=1,title:"Borrar esta columna"})]);
+    (function(){var wrap=document.createElement("div");wrap.setAttribute("style","display:flex;align-items:center;gap:12px;padding:6px 6px 4px");
+      var cross=document.createElement("div");cross.setAttribute("style","display:grid;grid-template-columns:38px 38px 38px;grid-template-rows:38px 38px 38px;gap:3px;flex:0 0 auto");
+      function plus(key,title,dis){var b=document.createElement("button");b.type="button";b.title=title;b.textContent="+";
+        b.setAttribute("style","width:38px;height:38px;border-radius:10px;border:1.5px dashed "+(dis?bd:tx)+";background:transparent;color:"+tx+";font:700 22px/1 -apple-system,system-ui,sans-serif;opacity:"+(dis?0.3:1)+";cursor:pointer;display:flex;align-items:center;justify-content:center");
+        b.disabled=!!dis;b.addEventListener("pointerenter",function(){if(!dis)b.style.background="rgba(127,127,127,.14)"});b.addEventListener("pointerleave",function(){b.style.background="transparent"});
+        b.addEventListener("click",function(ev){ev.stopPropagation();close();var A2=api();if(A2)actions[key](A2,ix,i)});return b}
+      function cell(el){var d=document.createElement("div");if(el)d.appendChild(el);cross.appendChild(d)}
+      var mini=document.createElement("div");mini.title="Este pad";var pc=(A.Z[i]&&A.Z[i].colorSet&&A.Z[i].color)||"rgba(127,127,127,.35)";
+      mini.setAttribute("style","width:38px;height:38px;border-radius:9px;background:"+pc+";box-shadow:0 0 0 2px "+tx+" inset");
+      cell(null);cell(plus("filaArriba","Insertar fila arriba"));cell(null);
+      cell(plus("colIzq","Insertar columna a la izquierda",maxC));cell(mini);cell(plus("colDer","Insertar columna a la derecha",maxC));
+      cell(null);cell(plus("filaAbajo","Insertar fila abajo"));cell(null);
+      var right=document.createElement("div");right.setAttribute("style","flex:1 1 auto;display:flex;flex-direction:column;gap:6px;min-width:0");
+      var lab=document.createElement("div");lab.textContent="Toca un + para insertar fila o columna en ese lado";lab.setAttribute("style","font-size:11.5px;line-height:1.35;opacity:.6;font-weight:500;padding:0 2px 2px");
+      function del(key,label,title,dis){var b=document.createElement("button");b.type="button";b.title=title;b.textContent=label;
+        b.setAttribute("style","height:38px;border-radius:10px;border:1px solid "+bd+";background:transparent;color:#e5484d;font:600 13.5px -apple-system,system-ui,sans-serif;opacity:"+(dis?0.3:1)+";cursor:pointer");
+        b.disabled=!!dis;b.addEventListener("click",function(ev){ev.stopPropagation();close();var A2=api();if(A2)actions[key](A2,ix,i)});return b}
+      right.appendChild(lab);right.appendChild(del("filaBorrar","Borrar fila","Borrar esta fila"));right.appendChild(del("colBorrar","Borrar columna","Borrar esta columna",A.l<=1));
+      wrap.appendChild(cross);wrap.appendChild(right);menu.appendChild(wrap)})();
     document.body.appendChild(menu);marked=padEl;padEl.setAttribute("data-mp-menu","1");
     var r=menu.getBoundingClientRect(),W=window.innerWidth,H=window.innerHeight;
     menu.style.left=Math.max(8,Math.min(x,W-r.width-8))+"px";menu.style.top=Math.max(8,Math.min(y,H-r.height-8))+"px";
