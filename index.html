@@ -19,7 +19,8 @@
   function bytes(m){var c=m.channel-1;if(m.type==="pc")return[0xC0|c,m.number];
     if(m.type==="cc")return[0xB0|c,m.number,m.value===0?1:m.value];/* el Anagram ignora CC 0 */
     if(m.type==="noteOn")return[0x90|c,m.number,Math.max(1,m.value)];return[0x80|c,m.number,0]}
-  function post(m){
+  var sent=[];window.__mpSent=sent;
+  function post(m){sent.push({b:bytes(m).join(","),at:Date.now()});if(sent.length>20)sent.shift();
     if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.midi){window.webkit.messageHandlers.midi.postMessage(m);return}
     console.log("[MIDI]",JSON.stringify(m));
     if(ble.ch){bleSend(bytes(m));return}
@@ -30,7 +31,9 @@
       d.setAttribute("style","position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:10000;padding:9px 16px;border-radius:999px;background:#2a2a28;color:#fff;font:600 13px -apple-system,system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2);pointer-events:none;transition:opacity .25s");document.body.appendChild(d)}
     d.textContent=txt;d.style.opacity="1";clearTimeout(d._t);d._t=setTimeout(function(){d.style.opacity="0"},1600)}
   window.__mpRxToast=toast;
-  function onPC(ch,num){window.__mpLastPC={ch:ch,num:num,at:Date.now()};
+  /* Eco: lo que la app acaba de enviar y vuelve por MIDI Through no cambia de página */
+  function isEcho(b){var k=b.join(","),now=Date.now();for(var i=sent.length-1;i>=0;i--){if(now-sent[i].at>1500)break;if(sent[i].b===k){sent.splice(i,1);return true}}return false}
+  function onPC(ch,num){if(isEcho([0xC0|(ch-1),num]))return;window.__mpLastPC={ch:ch,num:num,at:Date.now()};
     var A=window.__mpApi&&window.__mpApi();if(!A||!A.n)return;
     if(window.__mpLearn){var f=window.__mpLearn;window.__mpLearn=null;if(A.o){f(num,ch);return}}
     var idx=-1;for(var i=0;i<A.n.length;i++){var pg=A.n[i];if(pg&&typeof pg.recvPC==="number"&&pg.recvPC===num){idx=i;break}}
