@@ -25,7 +25,7 @@
     if(ble.ch){bleSend(bytes(m));return}
     access().then(function(a){var b=bytes(m);a.outputs.forEach(function(o){if(!/network session/i.test(o.name||""))o.send(b)})}).catch(function(){});
   }
-  /* Recepción MIDI: un Program Change que llega del Anagram abre la página asociada a ese preset */
+  /* Recepción MIDI: un Program Change que llega de un dispositivo MIDI abre la página asociada a ese preset */
   function toast(txt){var d=document.getElementById("mp-rx-toast");if(!d){d=document.createElement("div");d.id="mp-rx-toast";
       d.setAttribute("style","position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:10000;padding:9px 16px;border-radius:999px;background:#2a2a28;color:#fff;font:600 13px -apple-system,system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2);pointer-events:none;transition:opacity .25s");document.body.appendChild(d)}
     d.textContent=txt;d.style.opacity="1";clearTimeout(d._t);d._t=setTimeout(function(){d.style.opacity="0"},1600)}
@@ -34,8 +34,8 @@
     var A=window.__mpApi&&window.__mpApi();if(!A||!A.n)return;
     if(window.__mpLearn){var f=window.__mpLearn;window.__mpLearn=null;if(A.o){f(num,ch);return}}
     var idx=-1;for(var i=0;i<A.n.length;i++){var pg=A.n[i];if(pg&&typeof pg.recvPC==="number"&&pg.recvPC===num){idx=i;break}}
-    if(idx<0)return;if(A.o){toast("Preset "+num+" → «"+(A.n[idx].name||"")+"» (sal de edición para cambiar)");return}
-    if(idx!==A.t){A.r(idx);toast("Preset "+num+" → "+(A.n[idx].name||"Página "+(idx+1)))}}
+    if(idx<0)return;if(A.o){toast("PC "+num+" → «"+(A.n[idx].name||"")+"» (sal de edición para cambiar)");return}
+    if(idx!==A.t){A.r(idx);toast("PC "+num+" → "+(A.n[idx].name||"Página "+(idx+1)))}}
   var rs=0;/* running status */
   function rx(b){for(var i=0;i<b.length;i++){var x=b[i];if(x>=0xF8)continue;if(x&0x80){rs=(x<0xF0)?x:0;
         if((x&0xF0)===0xC0&&i+1<b.length&&!(b[i+1]&0x80)){onPC((x&15)+1,b[i+1]);i++}}
@@ -260,7 +260,7 @@
       box.innerHTML='<button type="button" style="width:100%;height:46px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;font:600 14px -apple-system,system-ui,sans-serif;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg><span>Eliminar esta página</span></button>';
       box.firstChild.setAttribute("data-mp-delbtn","1");box.firstChild.addEventListener("click",function(){window.__mpDeletePage&&window.__mpDeletePage()});
       var pc=document.createElement("div");pc.setAttribute("data-mp-pcbox","1");
-      pc.innerHTML='<div data-l style="font:600 11px -apple-system,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Abrir con preset del Anagram</div>'+
+      pc.innerHTML='<div data-l style="font:600 11px -apple-system,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Abrir con Program Change recibido</div>'+
         '<div style="display:flex;gap:8px;align-items:center"><input data-v type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" style="flex:1;min-width:0;height:42px;padding:0 12px;border-radius:12px;font:600 14px -apple-system,system-ui,sans-serif;outline:none;-webkit-appearance:none">'+
         '<button type="button" data-learn style="height:42px;padding:0 14px;border-radius:12px;font:600 13px -apple-system,system-ui,sans-serif;cursor:pointer">Aprender</button>'+
         '<button type="button" data-clr title="Quitar" style="width:42px;height:42px;border-radius:12px;font:600 18px -apple-system,system-ui,sans-serif;cursor:pointer">×</button></div>'+
@@ -279,13 +279,13 @@
     var pcb=box.querySelector("[data-mp-pcbox]");if(pcb){var cur=A&&A.n&&A.n[A.t],val=cur&&typeof cur.recvPC==="number"?cur.recvPC:null,lrn=!!window.__mpLearn;
       pcb.style.marginBottom="14px";pcb.querySelector("[data-l]").style.color=th.secondary||"#8a857f";
       var vv=pcb.querySelector("[data-v]");if(document.activeElement!==vv)vv.value=lrn||val===null?"":String(val);
-      vv.placeholder=lrn?"Cambia de preset…":"PC nº (ninguno)";vv.disabled=lrn;
+      vv.placeholder=lrn?"Envía un PC…":"PC nº (ninguno)";vv.disabled=lrn;
       vv.style.background=th.modalBg||"#fff";vv.style.border="1px solid "+(th.btnBorder||"#e5e5e5");vv.style.color=th.text||"#1f1e1c";
       var lb=pcb.querySelector("[data-learn]");lb.textContent=lrn?"Cancelar":"Aprender";lb.style.background=lrn?"#e8a33d":(th.text||"#1f1e1c");lb.style.color=lrn?"#1f1e1c":(th.rootBg||"#fff");lb.style.border="none";
       var cb=pcb.querySelector("[data-clr]");cb.style.display=val===null?"none":"";cb.style.background=th.modalBg||"#fff";cb.style.border="1px solid "+(th.btnBorder||"#e5e5e5");cb.style.color=th.text||"#1f1e1c";
       var dup=null;if(val!==null&&A.n)for(var di=0;di<A.n.length;di++){if(di!==A.t&&A.n[di]&&A.n[di].recvPC===val){dup=A.n[di].name||("Página "+(di+1));break}}
       var hh=pcb.querySelector("[data-h]");hh.style.color=dup?"#e5484d":(th.secondary||"#8a857f");
-      hh.textContent=dup?"«"+dup+"» también usa este número; se abrirá la primera de las dos.":(lrn?"Esperando el Program Change que envía el Anagram al activar el preset.":"Al recibir este Program Change se abre esta página.")}
+      hh.textContent=dup?"«"+dup+"» también usa este número; se abrirá la primera de las dos.":(lrn?"Esperando el Program Change que envíe tu dispositivo MIDI.":"Al recibir este Program Change se abre esta página.")}
     box.setAttribute("style","margin-top:auto;padding:16px 24px 20px;border-top:1px solid "+(th.headerBorder||"rgba(0,0,0,.08)"));
     var b=box.querySelector("[data-mp-delbtn]");b.style.background=th.modalBg||"#fff";b.style.border="1px solid "+(th.btnBorder||"#e5e5e5");b.style.color="#e5484d";
     var nm=(A&&A.n&&A.n[A.t]&&A.n[A.t].name)||"";b.lastChild.textContent=nm?"Eliminar «"+nm+"»":"Eliminar esta página";
