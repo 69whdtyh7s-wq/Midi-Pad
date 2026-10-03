@@ -1,6 +1,6 @@
 /* Guarda una copia de la botonera en el iPad para poder abrirla sin internet */
-const CACHE = "midipad-v1";
-const FILES = ["./", "./index.html"];
+const CACHE = "midipad-v2";
+const FILES = ["./", "./index.html", "./icon-180.png", "./icon-512.png", "./favicon-32.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
 });
