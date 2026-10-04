@@ -35,6 +35,17 @@
       d.setAttribute("style","position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:10000;padding:9px 16px;border-radius:999px;background:#2a2a28;color:#fff;font:600 13px -apple-system,system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2);pointer-events:none;transition:opacity .25s");document.body.appendChild(d)}
     d.textContent=txt;d.style.opacity="1";clearTimeout(d._t);d._t=setTimeout(function(){d.style.opacity="0"},1600)}
   window.__mpRxToast=toast;
+  /* Sin desplazamiento de la página (ni rebote) en iPhone/iPad: solo se desplazan por dentro los paneles que lo necesitan */
+  var ty0=0;
+  function scrollBox(el){for(;el&&el!==document.body&&el!==document.documentElement;el=el.parentElement){if(el.nodeType!==1)continue;var cs=getComputedStyle(el);
+      if(/(auto|scroll)/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+1)return el}return null}
+  window.__mpScrollBox=scrollBox;
+  document.addEventListener("touchstart",function(ev){if(ev.touches&&ev.touches[0])ty0=ev.touches[0].clientY},{passive:true,capture:true});
+  document.addEventListener("touchmove",function(ev){if(ev.touches&&ev.touches.length>1){ev.preventDefault();return}
+    var box=scrollBox(ev.target);if(!box){ev.preventDefault();return}
+    var y=ev.touches&&ev.touches[0]?ev.touches[0].clientY:ty0,dy=y-ty0;
+    if((dy>0&&box.scrollTop<=0)||(dy<0&&box.scrollTop+box.clientHeight>=box.scrollHeight-1))ev.preventDefault()},{passive:false,capture:true});
+  window.addEventListener("scroll",function(){if(window.scrollY||window.scrollX)window.scrollTo(0,0)},{passive:true});
   /* Confirmación de borrar página: se cancela al tocar en otra zona */
   function cancelDel(ev){var A=window.__mpApi&&window.__mpApi();if(!A||!A.U)return;if(ev.target&&ev.target.closest&&ev.target.closest("[data-mp-delpg]"))return;A.Q(null)}
   document.addEventListener("pointerdown",cancelDel,true);document.addEventListener("touchstart",cancelDel,{capture:true,passive:true});document.addEventListener("mousedown",cancelDel,true);
@@ -577,6 +588,10 @@ return a("div",{className:"w-full h-full",style:{display:"grid",gridTemplateColu
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         * { font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
         @media (max-width: 440px) { .mp-rename { display: none !important; } }
+        html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+        body { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; }
+        #root { height: 100%; overflow: hidden; }
+        .overflow-y-auto, .overflow-auto { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
         @keyframes slideUp { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
         @keyframes scaleIn { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
