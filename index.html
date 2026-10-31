@@ -158,17 +158,15 @@
     function download(){var blob=new Blob([txt],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
       a.href=url;a.download=name;a.style.display="none";document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(url);a.remove()},4000)}
     function viaText(){copyText(txt).then(function(){toast("Copia copiada como texto. Pégala en Notas para guardarla.",3500)},function(){toast("No se pudo guardar la copia en este navegador",3500)})}
-    function pickFile(){if(!navigator.share||!navigator.canShare)return null;var types=["application/json","text/plain"];
+    function pickFile(){if(!navigator.share||!navigator.canShare)return null;var types=["application/json"];
       for(var i=0;i<types.length;i++){var f=null;try{f=new File([txt],name,{type:types[i]})}catch(e){}if(f){try{if(navigator.canShare({files:[f]}))return f}catch(e){}}}return null}
     var ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
     function ok(){toast("Copia guardada · "+np+" pág · "+nd+" pads",2500)}
     /* iPadOS/iOS: panel propio con botones claros en vez del pequeño cuadro de descarga de la esquina */
-    function panel(){modal("Copia de seguridad",np+" página"+(np===1?"":"s")+" · "+nd+" pads. Elige cómo guardarla.",function(m){
+    function panel(){modal("Copia de seguridad",np+" página"+(np===1?"":"s")+" · "+nd+" pads. Se guarda como un único archivo .json.",function(m){
       var f=pickFile();
       if(f)m.button("Guardar en Archivos / Compartir",true,function(){navigator.share({files:[f],title:name}).then(function(){m.close();ok()}).catch(function(e){if(!e||e.name!=="AbortError")m.status("No se pudo abrir el menú de compartir. Prueba otra opción.")})});
-      if(navigator.share)m.button("Compartir como texto",!f,function(){navigator.share({title:name,text:txt}).then(function(){m.close();ok()}).catch(function(e){if(!e||e.name!=="AbortError")m.status("No se pudo abrir el menú de compartir.")})});
-      m.button("Descargar archivo .json",!f&&!navigator.share,function(){try{download();m.status("Descargando… abre Descargas para guardarlo en Archivos.")}catch(e){m.status("No se pudo descargar en este navegador.")}});
-      m.button("Copiar como texto",false,function(){copyText(txt).then(function(){m.status("Copiada. Pégala en Notas para guardarla.")},function(){m.status("No se pudo copiar.")})});
+      m.button("Descargar archivo .json",!f,function(){try{download();m.status("Descargando… abre Descargas para guardarlo en Archivos.")}catch(e){m.status("No se pudo descargar en este navegador.")}});
       m.button("Cerrar",false,m.close)})}
     if(!native){var f0=pickFile();if(f0){navigator.share({files:[f0],title:name}).then(ok).catch(function(e){if(e&&e.name==="AbortError")return;if(ios)panel();else viaText()});return}}
     if(ios){panel();return}
