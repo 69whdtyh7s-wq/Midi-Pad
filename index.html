@@ -165,10 +165,10 @@
     /* iPadOS/iOS: panel propio con botones claros en vez del pequeño cuadro de descarga de la esquina */
     function panel(){modal("Copia de seguridad",np+" página"+(np===1?"":"s")+" · "+nd+" pads. Se guarda como un único archivo .json.",function(m){
       var f=pickFile();
-      if(f)m.button("Guardar en Archivos / Compartir",true,function(){navigator.share({files:[f],title:name}).then(function(){m.close();ok()}).catch(function(e){if(!e||e.name!=="AbortError")m.status("No se pudo abrir el menú de compartir. Prueba otra opción.")})});
+      if(f)m.button("Guardar en Archivos / Compartir",true,function(){navigator.share({files:[f]}).then(function(){m.close();ok()}).catch(function(e){if(!e||e.name!=="AbortError")m.status("No se pudo abrir el menú de compartir. Prueba otra opción.")})});
       m.button("Descargar archivo .json",!f,function(){try{download();m.status("Descargando… abre Descargas para guardarlo en Archivos.")}catch(e){m.status("No se pudo descargar en este navegador.")}});
       m.button("Cerrar",false,m.close)})}
-    if(!native){var f0=pickFile();if(f0){navigator.share({files:[f0],title:name}).then(ok).catch(function(e){if(e&&e.name==="AbortError")return;if(ios)panel();else viaText()});return}}
+    if(!native){var f0=pickFile();if(f0){navigator.share({files:[f0]}).then(ok).catch(function(e){if(e&&e.name==="AbortError")return;if(ios)panel();else viaText()});return}}
     if(ios){panel();return}
     try{download();ok()}catch(e){viaText()}};
   function parseBackup(txt){
@@ -618,11 +618,11 @@
 <style id="mp-press-fx">
 /* Pulsación de pads más marcada (solo fuera del modo edición) */
 .mp-grid:not(.mp-edit) [data-pad-index]:not([data-mp-empty]):active{transform:scale(.88)!important;filter:brightness(.72) saturate(1.15)!important;transition-duration:.05s!important}
+/* Una sola pulsación: al soltar, la animación parte exactamente del estado pulsado (:active) y vuelve suave al reposo, sin segundo golpe ni aro */
 @keyframes mp-pop{
- 0%{transform:scale(.86);filter:brightness(.7) saturate(1.2);box-shadow:0 0 0 0 color-mix(in srgb,var(--mp-hl,#000) 55%,transparent)}
- 45%{transform:scale(.93);filter:brightness(.8);box-shadow:0 0 0 7px color-mix(in srgb,var(--mp-hl,#000) 30%,transparent)}
- 100%{transform:scale(.97);filter:brightness(.95);box-shadow:0 0 0 12px color-mix(in srgb,var(--mp-hl,#000) 0%,transparent)}}
-.mp-grid:not(.mp-edit) [data-pad-index].brightness-95{animation:mp-pop .36s ease-out}
+ 0%{transform:scale(.88);filter:brightness(.72) saturate(1.15)}
+ 100%{transform:scale(1);filter:brightness(1) saturate(1)}}
+.mp-grid:not(.mp-edit) [data-pad-index].brightness-95{--tw-ring-shadow:0 0 #0000!important;--tw-ring-offset-shadow:0 0 #0000!important;animation:mp-pop .38s ease-out forwards}
 </style>
 <script>
 /* Pulsación larga sobre una zona sin botones → entra en modo edición */
